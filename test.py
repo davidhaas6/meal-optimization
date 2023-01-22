@@ -1,57 +1,22 @@
-import requests
-import re
-from optimize import *
+import pandas as pd
+import optimize
 
-headers = {
-    'authority': 'www.instacart.com',
-    'pragma': 'no-cache',
-    'cache-control': 'no-cache',
-    'sec-ch-ua': '"Chromium";v="94", "Google Chrome";v="94", ";Not A Brand";v="99"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
-    'upgrade-insecure-requests': '1',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'sec-fetch-site': 'none',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-user': '?1',
-    'sec-fetch-dest': 'document',
-    'accept-language': 'en-US,en;q=0.9,fr;q=0.8',
-    'cookie': 'device_uuid=2191862f-7d52-412d-81f6-3f22e699f3bf; _instacart_logged_in=1; ab.storage.deviceId.6f8d91cb-99e4-4ad7-ae83-652c2a2c845d=%7B%22g%22%3A%22f29a4630-fc05-5fbb-138f-043a35e5b1b4%22%2C%22c%22%3A1622312907388%2C%22l%22%3A1622312907388%7D; __stripe_mid=ed784535-8515-4dcd-bd14-8df2da9478f974bd78; G_ENABLED_IDPS=google; known_visitor=%7Cjosh.r.mosier%40gmail.com%7Cgoogle_sso; ab.storage.userId.6f8d91cb-99e4-4ad7-ae83-652c2a2c845d=%7B%22g%22%3A%2256907461%22%2C%22c%22%3A1633024308752%2C%22l%22%3A1633024308752%7D; __Host-instacart_sid=f93afec1cece2ba3ee6076faba68d702692106562c33cb2edcb31b9bff7ec938; forterToken=1a28c0f50e9142b8ae888b7f59830628_1634739248336_1069_UAL9_9ck; ab.storage.sessionId.6f8d91cb-99e4-4ad7-ae83-652c2a2c845d=%7B%22g%22%3A%22a2998256-bc0e-29d3-00cc-9a3cd8ebdec8%22%2C%22e%22%3A1634741049768%2C%22c%22%3A1634737593531%2C%22l%22%3A1634739249768%7D; ahoy_visit=0a0505b9-25a9-4c7d-9396-b6093fca16dc; ahoy_track=true; __cf_bm=Ko3fhTvzhgJtz4SD7F.JyQqeweMBYzOfCE_59kcwJrM-1634835690-0-ATIJUCUmnmhYBltn/DEjAPVko83MJ3QmwmjdJn8xAnz6O8CKTDfZdFSImJKRwmwt5vh44w9igFAWvkpTQZfdtyI=; ahoy_visitor=4f4c86da-7cf7-488d-83a0-111fc298c098; build_sha=30b00064edc6baf398ce846905955f526065fd9d; _instacart_session_id=eS80eFJ0czdJTk11MUtXMUNGaUpDT1JlVlpaeWozaFVZTEpTZ2ZacWFmYk9INnlIckJ2dHZEMjV6aTYrZlJCTDJ2dzJsVGQ5UnFlaU9ReVFRYWd3SmhQQ3dWaldIMDZUOFp1ajk3ZEVXaUYzVmxhOFlxMkNOUTJKck1EYXdHTGVna3pDVUF1UGY0REF4R1ZEWlhBV0RhYVE1VC9kbGowd0lweTF2STB4RzNqTXZMSTRXUzRXb1g4QlcrcTZpOGVrSnJRTEVrVXFmT1NNdFJ2Q201bFRsTFJCT3BPeVQwU091QUR4a0IrYzFTNDhhNmNPTEtiTUEvOVJGQ3JQQXVETi0tN1pscmI2czRWdzFQSmNKYU5WZVVVZz09--cd56ad69872aa78cdf6dac47f868ade2d984ef79',
-}
+df = pd.read_csv('data/bb_nutrition.csv',index_col=0)
+bad_rows = '|'.join(['best-ever-avocado-dip'])
+df = df[~df.descriptor.str.contains(bad_rows)]
 
+df = df.sample(frac=0.75,axis=0)
+df = optimize.optimize_food_counts(df)
 
-# item_ids = ['808750234', '1414471631', '812380440', '812079813', '2971701912', '812793694', '813089764', '812228688', '812753249', '812108352', '811849927', '808748204', '808752261', '808749751', '811728053', '812521869', '808750122', '812761281', '812364282', '812075732', '812075992', '808749043', '811830256', '808740726', '808751010', '812426371', '812724444', '812956540', '1396373946', '808751023', '808752777', '812143565']
-# item_names = ['Sanpellegrino Lemon Italian Sparkling Drinks', 'Sargento Natural String Cheese Snacks', "Nature's Own Honey Wheat Bread", 'Kroger 2% Reduced Fat Milk', 'Banana', 'Kroger Honeycrisp Apples Pouch Bag', 'Navel Orange', "Ben & Jerry's Ice Cream Strawberry Cheesecake", "Kellogg's Raisin Bran Breakfast Cereal, High Fiber Cereal, Original", 'Lucky Charms Marshmallow Breakfast Cereal with Unicorns, Gluten Free', "Mott's Original Applesauce", 'Nature Valley Granola Bars, Dark Chocolate Cherry, Trail Mix, Chewy', 'Toll House Chocolate Chip Cookie Dough', 'Kroger Large Eggs', 'Kroger Plain Cream Cheese', 'Thomas Cinnamon Raisin Pre-Sliced Bagels', 'El Monterey Chicken & Cheese Flour Taquitos', 'Kroger Cut & Peeled Baby Carrots', 'Kroger Fresh Selections Celery Hearts', 'Hot Pockets Italian Style Meatballs & Mozzarella Garlic Buttery Crust Frozen Snacks', 'Kraft Deluxe Original Cheddar Macaroni & Cheese Dinner', 'StarKist Chunk Light Tuna in Water, Pouch', 'Pillsbury Toaster Strudel Apple Toaster Pastries, Value Size, 12 Count', 'Sargento Balanced Breaks Natural Sharp Cheddar Cheese, Sea-Salted Cashews and Cherry Juice-Infused Dried Cranberries', 'noosa Lemon Yogurt', 'Tostitos Scoops Party Size Tortilla Chips', 'Tostitos Medium Chunky Salsa Dip', 'Chips Ahoy! Chewy Chocolate Chip Cookies, Family Size', 'Larabar Peanut Butter Chocolate Chip Fruit & Nut Bars', 'A&W Root Beer', 'Eggo Frozen Waffles, Frozen Breakfast, Chocolatey Chip', 'Kraft Singles American Cheese Slices']
+mealplan = df[df.numMeals > 0]
+mealplan['leftover_servings'] = mealplan.servings - mealplan.numMeals
 
-item_ids = ['44481663', '44459457', '249742862', '44467927', '1657845543', '44450344', '44418949', '44452242', '44555555', '44415123', '44571329', '1657931401', '44482203', '44486798', '44440954', '44418937', '44569444', '44571320', '579289100', '44484146', '99512809', '60424682', '44508110', '44480628', '44483170', '44600748', '44560030', '44481685', '44524091', '44424554', '47884971', '44482298', '44560616', '44469336', '44479294', '429267281', '45101763', '594570975', '44560611', '44477647', '44416706', '44483196']
-item_names = ['Smart Balance Buttery Spread, Made with Extra Virgin Olive Oil', 'Nutella Hazelnut Spread, with Cocoa', 'Simply Light Lemonade, Non-Gmo', "Nature's Own Honey Wheat Bread", 'Post Honey Bunches of Oats Honey Roasted', "Mott's No Sugar Added Applesauce", "Amy's Kitchen Black Bean Vegetables Burrito", 'StarKist Chunk Light Tuna in Water, Pouch', 'MiO Vitamins Orange Vanilla Liquid Water Enhancer', 'Jimmy Dean Delights Turkey Sausage, Egg White & Cheese English Muffin Breakfast Sandwiches', 'Fresca Citrus Fridge Pack Soda', 'Sargento Balanced Breaks Natural White Cheddar Cheese, Sea-Salted Roasted Almonds, Dried Cranberries, Six-Pack', "I Can't Believe It's Not Butter Vegetable Oil Spread, The Light One", 'Barnana Organic Chewy Chocolate Banana Bites', 'Nature Valley Granola Bar, Sweet & Salty Dark Chocolate Peanut & Almond, 6 Bars', "Amy's Kitchen Frozen Bean & Rice Burrito, Vegan, Non-Dairy", 'Diet Coke Coke', 'Canada Dry Zero Sugar Ginger Ale', 'Sparkling Ice Pink Variety Pack', 'SB Milk, Fat Free', 'Sparkling Ice Sparkling Water Variety Pack', 'Birds Eye Broccoli Florets', 'ex-lax Maximum Strength Stimulant Laxative Pills', 'Jell-O Strawberry Sugar Free Ready-to-Eat Jello Cups Gelatin Snack', 'Sargento Balanced Breaks, Pepper Jack Natural Cheese, Honey Roasted Peanuts and Raisins', 'Banana', "McVitie's HobNobs", 'Coffee mate Zero Sugar French Vanilla Liquid Coffee Creamer', 'Fiber One Cheesecake Bar, Strawberry, Dessert Bar, 5 Count', 'Sun-Maid Vanilla Yogurt Covered Raisins', 'Pineapple', "Angie's White Cheddar Popcorn", 'belVita Blueberry Breakfast Biscuits', 'Thomas Plain Original Pre-Sliced Bagels', 'Philadelphia Reduced Fat Cream Cheese Spread with a Third Less Fat', 'Sweet Earth Cubano Empanada', 'Harvest Snaps Green Pea Snack Crisps, Original, Lightly Salted', 'Hippeas Organic Chickpea Puffs, Vegan White Cheddar', 'belVita Breakfast Biscuits, Golden Oat Flavor', "Amy's Kitchen Frozen Southwestern Burrito, Made with Organic Corn, Beans and Cheese, Non-GMO", 'Philadelphia Original Cream Cheese', 'Sargento Balanced Breaks with Natural White Cheddar Cheese, Sea-Salted Roasted Almonds and Dried Cranberries, One.Five oz., Three-Pack']
-def get_nutrition_info():
-    foods = []
-    for i,item_id in enumerate(item_ids):
-        food = {}
-        response = requests.get('https://www.instacart.com/v3/containers/items/item_' + str(item_id), headers=headers)
-        for module in response.json()['container']['modules']:
-            if module['id'].startswith('item_details_attributes'):
-                print(item_names[i])
-                if module['data']['nutrition']:
-                    food['name'] = item_names[i]
-                    food['calories'] = module['data']['nutrition']['calories']
-                    if module['data']['nutrition']["servings_per_container"]:
-                        servings = module['data']['nutrition']["servings_per_container"]
-                        print("Servings: " + str(servings))
-                        # print(int(re.findall(r'\d+', servings)[0])) #Servings --> Int
-                        food['servings'] = int(re.findall(r'\d+', servings)[0])
-                    for nutrient in module['data']['nutrition']['nutrients']:
-                        total = float(re.search("[-+]?\d*\.\d+|\d+",nutrient['total'])[0])
-                        if nutrient['total'].endswith('mg'):
-                            total = total / 1000
-                        food[nutrient['label']] = total
-                        print('\t' + nutrient['label'] + " " + str(total))
-                    foods.append(food)
-    return foods
+total_macros = mealplan.iloc[:,1:-2].multiply(mealplan.numMeals,axis=0)
+total_macros['descriptor'] = mealplan.descriptor
 
-foods = get_nutrition_info()
-print(foods)
+print("\n\nMeal Plan:")
+print(mealplan)
+# print("\n\nMacros:")
+# print(total_macros)
+print('\n', total_macros.sum())
 
-# foods = [{'name': 'Sanpellegrino Lemon Italian Sparkling Drinks', 'calories': 120.0, 'Total Fat': 0.0, 'Cholesterol': 0.0, 'Sodium': 0.005, 'Total Carbohydrate': 31.0, 'Protein': 0.0}, {'name': 'Sargento Natural String Cheese Snacks', 'calories': 80.0, 'Total Fat': 6.0, 'Cholesterol': 0.015, 'Sodium': 0.2, 'Total Carbohydrate': 0.0, 'Protein': 8.0}, {'name': "Nature's Own Honey Wheat Bread", 'calories': 70.0, 'Total Fat': 1.0, 'Cholesterol': 0.0, 'Sodium': 0.12, 'Total Carbohydrate': 14.0, 'Protein': 3.0}, {'name': 'Kroger 2% Reduced Fat Milk', 'calories': 120.0, 'Total Fat': 5.0, 'Cholesterol': 0.02, 'Sodium': 0.12, 'Total Carbohydrate': 12.0, 'Protein': 8.0}, {'name': "Ben & Jerry's Ice Cream Strawberry Cheesecake", 'calories': 340.0, 'Total Fat': 20.0, 'Cholesterol': 0.08, 'Sodium': 0.15, 'Total Carbohydrate': 37.0, 'Protein': 5.0}, {'name': "Kellogg's Raisin Bran Breakfast Cereal, High Fiber Cereal, Original", 'calories': 190.0, 'Total Fat': 1.0, 'Cholesterol': 0.0, 'Sodium': 0.2, 'Total Carbohydrate': 47.0, 'Protein': 5.0}, {'name': 'Lucky Charms Marshmallow Breakfast Cereal with Unicorns, Gluten Free', 'calories': 140.0, 'Total Fat': 1.0, 'Cholesterol': 0.0, 'Sodium': 0.17, 'Total Carbohydrate': 30.0, 'Protein': 2.0}, {'name': "Mott's Original Applesauce", 'calories': 90.0, 'Total Fat': 0.0, 'Cholesterol': 0.0, 'Sodium': 0.0, 'Total Carbohydrate': 24.0, 'Protein': 0.0}, {'name': 'Nature Valley Granola Bars, Dark Chocolate Cherry, Trail Mix, Chewy', 'calories': 150.0, 'Total Fat': 4.0, 'Cholesterol': 0.0, 'Sodium': 0.07, 'Total Carbohydrate': 25.0, 'Protein': 2.0}, {'name': 'Toll House Chocolate Chip Cookie Dough', 'calories': 80.0, 'Total Fat': 4.0, 'Cholesterol': 0.005, 'Sodium': 0.065, 'Total Carbohydrate': 11.0, 'Protein': 1.0}, {'name': 'Kroger Large Eggs', 'calories': 70.0, 'Total Fat': 5.0, 'Cholesterol': 0.185, 'Sodium': 0.07, 'Total Carbohydrate': 0.0, 'Protein': 6.0}, {'name': 'Thomas Cinnamon Raisin Pre-Sliced Bagels', 'calories': 280.0, 'Total Fat': 1.5, 'Cholesterol': 0.0, 'Sodium': 0.39, 'Total Carbohydrate': 56.0, 'Protein': 9.0}, {'name': 'El Monterey Chicken & Cheese Flour Taquitos', 'calories': 220.0, 'Total Fat': 11.0, 'Cholesterol': 0.01, 'Sodium': 0.28, 'Total Carbohydrate': 26.0, 'Protein': 7.0}, {'name': 'Kroger Fresh Selections Celery Hearts', 'calories': 20.0, 'Total Fat': 0.0, 'Cholesterol': 0.0, 'Sodium': 0.09, 'Total Carbohydrate': 3.0}, {'name': 'Hot Pockets Italian Style Meatballs & Mozzarella Garlic Buttery Crust Frozen Snacks', 'calories': 300.0, 'Total Fat': 12.0, 'Cholesterol': 0.015, 'Sodium': 0.46, 'Total Carbohydrate': 38.0, 'Protein': 10.0}, {'name': 'Kraft Deluxe Original Cheddar Macaroni & Cheese Dinner', 'calories': 310.0, 'Total Fat': 11.0, 'Cholesterol': 0.015, 'Sodium': 0.91, 'Total Carbohydrate': 42.0, 'Protein': 12.0}, {'name': 'StarKist Chunk Light Tuna in Water, Pouch', 'calories': 70.0, 'Total Fat': 0.0, 'Cholesterol': 0.035, 'Sodium': 0.3, 'Total Carbohydrate': 0.0, 'Protein': 17.0}, {'name': 'Pillsbury Toaster Strudel Apple Toaster Pastries, Value Size, 12 Count', 'calories': 350.0, 'Total Fat': 13.0, 'Cholesterol': 0.0, 'Sodium': 0.3, 'Total Carbohydrate': 53.0, 'Protein': 5.0}, {'name': 'Sargento Balanced Breaks Natural Sharp Cheddar Cheese, Sea-Salted Cashews and Cherry Juice-Infused Dried Cranberries', 'calories': 180.0, 'Total Fat': 11.0, 'Cholesterol': 0.02, 'Sodium': 0.18, 'Total Carbohydrate': 14.0, 'Protein': 7.0}, {'name': 'noosa Lemon Yogurt', 'calories': 320.0, 'Total Fat': 13.0, 'Cholesterol': 0.04, 'Sodium': 0.11, 'Total Carbohydrate': 39.0, 'Protein': 12.0}, {'name': 'Tostitos Scoops Party Size Tortilla Chips', 'calories': 140.0, 'Total Fat': 7.0, 'Cholesterol': 0.0, 'Sodium': 0.115, 'Total Carbohydrate': 19.0, 'Protein': 2.0}, {'name': 'Tostitos Medium Chunky Salsa Dip', 'calories': 10.0, 'Total Fat': 0.0, 'Cholesterol': 0.0, 'Sodium': 0.25, 'Total Carbohydrate': 2.0, 'Protein': 0.0}, {'name': 'Chips Ahoy! Chewy Chocolate Chip Cookies, Family Size', 'calories': 140.0, 'Total Fat': 6.0, 'Cholesterol': 0.0, 'Sodium': 0.09, 'Total Carbohydrate': 21.0, 'Protein': 1.0}, {'name': 'A&W Root Beer', 'calories': 160.0, 'Total Fat': 0.0, 'Cholesterol': 0.0, 'Sodium': 0.085, 'Total Carbohydrate': 44.0, 'Protein': 0.0}, {'name': 'Eggo Frozen Waffles, Frozen Breakfast, Chocolatey Chip', 'calories': 200.0, 'Total Fat': 7.0, 'Cholesterol': 0.005, 'Sodium': 0.37, 'Total Carbohydrate': 32.0, 'Protein': 4.0}, {'name': 'Kraft Singles American Cheese Slices', 'calories': 60.0, 'Total Fat': 4.0, 'Cholesterol': 0.015, 'Sodium': 0.24, 'Total Carbohydrate': 2.0, 'Protein': 4.0}]
